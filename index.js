@@ -16,22 +16,32 @@ app.get("/", (req, res) => {
     res.sendFile(join(__dirname, "index.html"));
 });
 
+app.get("*", (req, res) => {
+    res.redirect("/");
+});
+
 io.on("connection", (socket) => {
     // console.log(socket);
-    console.log(`a user is connected ${socket.id}`);
+    // console.log(`a user is connected ${socket.id}`);
 
-    socket.on("disconnect", () => {
-        console.log(`user disconnected ${socket.id}`);
-    });
+    // socket.on("disconnect", () => {
+    //     console.log(`user disconnected ${socket.id}`);
+    // });
 
     socket.on("chat-message", (msg) => {
         // console.log("message", msg);
         // this will emit the event to all connected sockets
-        // io.emit("message-to-everyone", msg);
+        io.emit("message-to-everyone", msg);
 
         // message to everyone expect the sender
-        socket.broadcast.emit("messages", msg);
+        // socket.broadcast.emit("messages", msg);
     });
+
+    // Rooms
+    const roomId = "room1";
+    socket.join(roomId);
+    io.to(roomId).emit("msg", "hello world");
+    io.except(roomId).emit("msg", "hi world");
 });
 
 server.listen(3000, () => {

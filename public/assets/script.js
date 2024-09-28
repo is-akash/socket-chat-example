@@ -13,13 +13,22 @@ form.addEventListener("submit", (e) => {
 });
 
 socket.on("message-to-everyone", (msg) => {
-    console.log(msg);
-});
-
-socket.on("messages", (msg) => {
-    console.log(msg);
     const item = document.createElement("li");
     item.textContent = msg;
     messages.appendChild(item);
     window.scrollTo(0, document.body.scrollHeight);
+});
+
+socket.on("messages", (msg) => {
+    const item = document.createElement("li");
+    item.textContent = msg;
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+});
+
+socket.on("msg", (val) => {
+    console.log(val);
+});
+socket.on("left", (id) => {
+    console.log(id + "left the room");
 });
