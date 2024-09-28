@@ -135,3 +135,17 @@ io.on('connection', (socket) => {
 });
 ```
 ![ref](/public/assets/Images/room-dark.png)
+
+### Handling disconnections
+
+Now, let's highlight two really important properties of Socket.IO:
+
+- a Socket.IO client is not always connected
+- a Socket.IO server does not store any event
+
+Even over a stable network, it is not possible to maintain a connection alive forever.
+In the context of our chat application, this implies that a disconnected client might miss some messages:
+
+![ref](/public/assets/Images/disconnected-dark.png)
+
+
