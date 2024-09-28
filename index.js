@@ -24,8 +24,13 @@ io.on("connection", (socket) => {
         console.log(`user disconnected ${socket.id}`);
     });
 
-    socket.on("chat message", (msg) => {
-        console.log("message", msg);
+    socket.on("chat-message", (msg) => {
+        // console.log("message", msg);
+        // this will emit the event to all connected sockets
+        // io.emit("message-to-everyone", msg);
+
+        // message to everyone expect the sender
+        socket.broadcast.emit("messages", msg);
     });
 });
 
