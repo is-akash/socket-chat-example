@@ -1,4 +1,8 @@
-const socket = io();
+const socket = io({
+    auth: {
+        serverOffset: 0,
+    },
+});
 
 const form = document.getElementById("form");
 const input = document.getElementById("input");
@@ -24,18 +28,13 @@ toggleButton.addEventListener("click", (e) => {
     }
 });
 
-socket.on("message-to-everyone", (msg) => {
+socket.on("chat-message", (msg, serverOffset) => {
     const item = document.createElement("li");
     item.textContent = msg;
     messages.appendChild(item);
     window.scrollTo(0, document.body.scrollHeight);
-});
-
-socket.on("messages", (msg) => {
-    const item = document.createElement("li");
-    item.textContent = msg;
-    messages.appendChild(item);
-    window.scrollTo(0, document.body.scrollHeight);
+    socket.auth.serverOffset = serverOffset;
+    console.log("hehe");
 });
 
 socket.on("msg", (val) => {

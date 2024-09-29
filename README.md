@@ -3,6 +3,104 @@
 
 Following the official docs : https://socket.io/docs/v4/tutorial
 
+```js
+npm install socket.io
+```
+
+```js
+import express from 'express';
+import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { Server } from 'socket.io';
+
+const app = express();
+const server = createServer(app);
+const io = new Server(server);
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+app.get('/', (req, res) => {
+  res.sendFile(join(__dirname, 'index.html'));
+});
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+
+      socket.on("disconnect", () => {
+        console.log(`user disconnected ${socket.id}`);
+    });
+});
+
+server.listen(3000, () => {
+  console.log('server running at http://localhost:3000');
+});
+```
+
+`client`
+
+```js
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  // If we are using a separate client and server
+  // const socket = io("https://example.com/app"); // server endpoint
+</script>
+```
+
+`socket.io cdn`
+
+```js
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+```
+
+### Emitting events
+
+`client`
+
+```
+socket.emit('chat message', value);
+```
+`server`
+
+```js
+io.on('connection', (socket) => {
+  socket.on('chat message', (msg) => {
+    console.log('message: ' + msg);
+  });
+});
+```
+
+### Broadcasting
+
+`server`
+
+```js
+io.on('connection', (socket) => {
+  socket.broadcast.emit('hi'); // emit msg to everyone except sender
+});
+```
+
+```js
+io.on('connection', (socket) => {
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg); // emit msg to everyone including sender
+  });
+});
+```
+
+`client`
+
+```js
+  socket.on('chat message', (msg) => {
+    const item = document.createElement('li');
+    item.textContent = msg;
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+```
+
 
 ### Acknowledgements
 Events are great, but in some cases you may want a more classic request-response API. In Socket.IO, this feature is named "acknowledgements".
@@ -147,5 +245,23 @@ Even over a stable network, it is not possible to maintain a connection alive fo
 In the context of our chat application, this implies that a disconnected client might miss some messages:
 
 ![ref](/public/assets/Images/disconnected-dark.png)
+
+```js
+const io = new Server(server, {
+  connectionStateRecovery: {}
+});
+```
+
+### Server Delivery
+
+There are two common ways to synchronize the state of the client upon reconnection:
+
+- either the server sends the whole state
+- or the client keeps track of the last event it has processed and the server sends the missing pieces
+
+Both are totally valid solutions and choosing one will depend on your use case. In this tutorial, we will go with the latter.
+
+
+
 
 
