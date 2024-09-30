@@ -38,18 +38,22 @@ app.get("*", (req, res) => {
 });
 
 io.on("connection", async (socket) => {
-    socket.on("chat-message", async (msg) => {
+    socket.on("chat-message", async (msg, clientOffset, callback) => {
         let result;
         try {
-            const query = "INSERT INTO messages (content) VALUES (?)";
-            result = await db.run(query, msg);
+            const query =
+                "INSERT INTO messages (content, client_offset) VALUES (?, ?)";
+            result = await db.run(query, msg, clientOffset);
         } catch (error) {
-            // TODO: handle the failure
-            console.error(error);
-            recovered = false;
+            // console.error("error", error);
+            if (error.errno === 19) {
+                callback();
+            } else {
+            }
             return;
         }
         io.emit("chat-message", msg, result.lastID);
+        callback();
     });
 
     if (!socket.recovered) {
@@ -67,6 +71,11 @@ io.on("connection", async (socket) => {
             console.log(error);
         }
     }
+
+    socket.on("hello", (value, callback) => {
+        console.log(value);
+        callback();
+    });
 });
 
 server.listen(3000, () => {
