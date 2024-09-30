@@ -449,3 +449,90 @@ And then we store this offset alongside the message on the server side:
 This way, the `UNIQUE` constraint on the `client_offset` column prevents the duplication of the message.
 
 > Do not forget to acknowledge the event, or else the client will keep retrying (up to retries times).
+
+### Scaling horizontally
+
+- Horizontal scaling (also known as "scaling out") means adding new servers to your infrastructure to cope with new demands
+- Vertical scaling (also known as "scaling up") means adding more resources (processing power, memory, storage, ...) to your existing infrastructure
+
+First step: let's use all the available cores of the host. By default, Node.js runs your Javascript code in a single thread, which means that even with a 32-core CPU, only one core will be used. Fortunately, the Node.js cluster module provides a convenient way to create one worker thread per core.
+
+We will also need a way to forward events between the Socket.IO servers. We call this component an "Adapter".
+
+![ref](/public/assets/Images/adapter-dark.png);
+
+So let's install the cluster adapter:
+
+```bash
+npm install @socket.io/cluster-adapter
+```
+
+`server`
+
+```js
+import { availableParallelism } from 'node:os';
+import cluster from 'node:cluster';
+import { createAdapter, setupPrimary } from '@socket.io/cluster-adapter';
+
+
+if (cluster.isPrimary) {
+  const numCPUs = availableParallelism();
+  // create one worker per available core
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork({
+      PORT: 3000 + i
+    });
+  }
+  
+  // set up the adapter on the primary thread
+  setupPrimary();
+} else {
+  const app = express();
+  const server = createServer(app);
+  const io = new Server(server, {
+    connectionStateRecovery: {},
+    // set up the adapter on each worker thread
+    adapter: createAdapter()
+  });
+
+  // [...]
+
+  // each worker will listen on a distinct port
+  const port = process.env.PORT;
+
+  server.listen(port, () => {
+    console.log(`server running at http://localhost:${port}`);
+  });
+}
+```
+
+
+There are currently 5 official adapter implementations:
+
+the Redis adapter
+the Redis Streams adapter
+the MongoDB adapter
+the Postgres adapter
+the Cluster adapter
+So you can choose the one that best suits your needs. However, please note that some implementations do not support the Connection state recovery feature, you can find the compatibility matrix [here](https://socket.io/docs/v4/connection-state-recovery#compatibility-with-existing-adapters).
+
+
+>In most cases, you would also need to ensure that all the HTTP requests of a Socket.IO session reach the same server (also known as "sticky session"). This is not needed here though, as each Socket.IO server has its own port.
+
+More information [here](https://socket.io/docs/v4/using-multiple-nodes/).
+
+### What we learn 
+
+- send an event between the client and the server
+- broadcast an event to all or a subset of connected clients
+- handle temporary disconnections
+- scale up
+
+### Here are some ideas to improve the application:
+
+- [ ] Broadcast a message to connected users when someone connects or disconnects.
+- [ ] Add support for nicknames.
+- [ ] Don’t send the same message to the user that sent it. Instead, append the message directly as soon as they press enter.
+- [ ] Add “{user} is typing” functionality.
+- [ ] Show who’s online.
+- [ ] Add private messaging.
